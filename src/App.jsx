@@ -1,13 +1,30 @@
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { List, ListItem, ListItemButton, ListItemText } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
 export default function App() {
-  const [location, setLocation] = useState('');
+  const [location, setLocation] = useState(localStorage.getItem('location') || '');
   const [results, setResults] = useState([]);
   const navigate = useNavigate();
+
+  const search = async () => {
+    try {
+      const cleanLocation = encodeURIComponent(location.trim());
+      const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${cleanLocation}`);
+      const data = await response.json();
+      setResults(data.results);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    if (location) {
+      search();
+    }
+  }, []);
 
   return (
     <>
@@ -15,21 +32,15 @@ export default function App() {
         label="Standort"
         onChange={(event) => {
           setLocation(event.target.value);
+          localStorage.setItem('location', event.target.value);
         }}
         value={location}
       />
       <Button
-        onClick={async () => {
-          try {
-            const cleanLocation = encodeURIComponent(location.trim());
-            const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${cleanLocation}`);
-            const data = await response.json();
-            setResults(data.results);
-          } catch (err) {
-            console.error(err);
-          }
-        }}
-      >Senden</Button>
+        onClick={search}
+      >
+        Senden
+      </Button>
       <List>
         {
           results.map((location) => {
